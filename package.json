@@ -1,0 +1,32 @@
+{
+  "name": "openchannel-facebook",
+  "version": "1.0.0",
+  "description": "xCALLY Motion Openchannel-Facebook integration",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xcally/openchannel-facebook.git"
+  },
+  "keywords": [
+    "xcally",
+    "motion",
+    "openchannel",
+    "facebook"
+  ],
+  "author": "xcally",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/xcally/openchannel-facebook/issues"
+  },
+  "homepage": "https://github.com/xcally/openchannel-facebook#readme",
+  "dependencies": {
+    "bluebird": "^3.4.1",
+    "body-parser": "^1.15.2",
+    "express": "^4.14.0",
+    "facebook-chat-api": "^1.1.0",
+    "request-promise": "^3.0.0"
+  }
+}
