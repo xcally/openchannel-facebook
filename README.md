@@ -19,6 +19,6 @@ xCALLY Motion provides all the necessary tools to receive and send messages. All
 
 ## Configuration
 
-Please see `config.json` in the root folder if you want to change the default application / mongo settings.
+Please see `config.json` in the root folder if you want to change the default application settings.
 
 xCALLY Motion | Powered by Xenialab s.r.l. - [www.xcallymotion.com](https://www.xcallymotion.com/)
