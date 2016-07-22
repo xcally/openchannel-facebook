@@ -39,7 +39,8 @@ Sometimes Facebook can block the account for safety reasons; please check your e
 
 Please check, in the config.json file, that username and password are correct.
 
-## More info
+## Enjoy
 
+Thank you for choosing XCALLY MOTION, one of the first Omni Channel solution integrated with AsteriskTM and the most innovative real time solutions available on the market.
 
-Please visi [www.xcallymotion.com](https://www.xcallymotion.com/)
+For more information, please visit our website [www.xcallymotion.com](https://www.xcallymotion.com/)
