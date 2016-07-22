@@ -21,6 +21,15 @@ xCALLY Motion provides all the necessary tools to receive and send messages. All
 
 Please see `config.json` in the root folder if you want to change the default application settings.
 
+```javascript
+{
+  "email": "YOUR_FACEBOOK_EMAIL",
+  "password": "YOUR_FACEBOOK_PASSWORD",
+  "url": "http://YOUR_MOTION_DOMAIN/api/openchannel/accounts/OPENCHANNEL_INTEGRATION_ID/receive",
+  "port": 3000
+}
+```
+
 ## Troubleshooting
 
 * Account HTTP Method or URL is not configured
