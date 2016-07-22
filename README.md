@@ -15,10 +15,31 @@ xCALLY Motion provides all the necessary tools to receive and send messages. All
   * Download the code `git clone https://github.com/xcally/openchannel-facebook.git`
   * Run `npm install` at the root folder to download dependencies.
   * Run `node index.js` to start the application.
-  * Navigate to http://localhost:3000/ in your favourite browser.
 
 ## Configuration
 
 Please see `config.json` in the root folder if you want to change the default application settings.
 
-xCALLY Motion | Powered by Xenialab s.r.l. - [www.xcallymotion.com](https://www.xcallymotion.com/)
+## Troubleshooting
+
+### Account HTTP Method or URL is not configured
+
+Please check to have configured correctly the ["Send" web hook](https://wiki.xcallymotion.com/display/XMD/Open+Channel#OpenChannel-WebHooks)
+
+### Error: connection refused ECONNREFUSED 
+
+Please check if the application nodejs is up
+
+### ERR! Error in login: Couldn't login. Facebook might have blocked this account.
+
+Please check everything is ok with your Facebook account.
+Sometimes Facebook can block the account for safety reasons; please check your e-mail and your account to enable it again.
+
+### Wrong Username/Password
+
+Please check, in the config.json file, that username and password are correct.
+
+## More info
+
+
+Please visi [www.xcallymotion.com](https://www.xcallymotion.com/)
