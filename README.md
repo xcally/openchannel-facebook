@@ -12,7 +12,7 @@ xCALLY Motion provides all the necessary tools to receive and send messages. All
 
 
 ## Setting up the app
-  * Set the open channel [Account on Motion](https://wiki.xcallymotion.com/display/XMD/Open+Channel) 
+  * Set the open channel [Account on Motion](https://wiki.xcallymotion.com/display/XMD/Open+Channel)
   * Download the code `git clone https://github.com/xcally/openchannel-facebook.git`
   * Run `npm install` at the root folder to download dependencies.
   * Run `node index.js` to start the application.
@@ -36,9 +36,9 @@ Please see `config.json` in the root folder if you want to change the default ap
 
 Please check to have configured correctly the ["Send" web hook](https://wiki.xcallymotion.com/display/XMD/Open+Channel#OpenChannel-WebHooks)
 
-* Error: connection refused ECONNREFUSED 
+* Error: connection refused ECONNREFUSED
 
-Please check if the application nodejs is up
+Please check if the nodejs application is up!
 
 * ERR! Error in login: Couldn't login. Facebook might have blocked this account.
 
