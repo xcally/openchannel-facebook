@@ -14,6 +14,7 @@ xCALLY Motion provides all the necessary tools to receive and send messages. All
 ## Setting up the app
   * Set the open channel [Account on Motion](https://wiki.xcallymotion.com/display/XMD/Open+Channel)
   * Download the code `git clone https://github.com/xcally/openchannel-facebook.git`
+  * Please see `config.json` in the root folder to change the default application settings.
   * Run `npm install` at the root folder to download dependencies.
   * Run `node index.js` to start the application.
 
