@@ -1,6 +1,7 @@
 {
   "email": "YOUR_FACEBOOK_EMAIL",
   "password": "YOUR_FACEBOOK_PASSWORD",
+  "pageID": "YOUR_FACEBOOK_PAGEID",
   "url": "http://YOUR_MOTION_DOMAIN/api/openchannel/accounts/OPENCHANNEL_INTEGRATION_ID/receive",
   "port": 3000
 }
