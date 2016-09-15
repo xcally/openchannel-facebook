@@ -88,6 +88,9 @@ function startapi(api) {
 login({
     email: config.email,
     password: config.password
+},{
+    pageID : config.pageID
+    
 }, function(err, api) {
     if (err) return console.error(err);
     startapi(api);
