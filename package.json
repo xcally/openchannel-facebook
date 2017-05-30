@@ -1,6 +1,6 @@
 {
   "name": "openchannel-facebook",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "xCALLY Motion Openchannel-Facebook integration",
   "main": "index.js",
   "scripts": {
@@ -23,10 +23,10 @@
   },
   "homepage": "https://github.com/xcally/openchannel-facebook#readme",
   "dependencies": {
-    "bluebird": "^3.4.1",
     "body-parser": "^1.15.2",
+    "config": "^1.20.4",
     "express": "^4.14.0",
-    "facebook-chat-api": "^1.2.0",
+    "morgan": "^1.8.2",
     "request-promise": "^3.0.0"
   }
 }

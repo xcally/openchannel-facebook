@@ -1,7 +1,8 @@
 {
-  "email": "YOUR_FACEBOOK_EMAIL",
-  "password": "YOUR_FACEBOOK_PASSWORD",
-  "pageID": "YOUR_FACEBOOK_PAGEID",
   "url": "http://YOUR_MOTION_DOMAIN/api/openchannel/accounts/OPENCHANNEL_INTEGRATION_ID/receive",
-  "port": 3000
+  "sendMessagePath": "/YOUR_PATH",
+  "port": 3001,
+  "appSecret": "YOUR_APP_SECRET",
+  "pageAccessToken": "YOUR_PAGE_ACCESS_TOKEN",
+  "validationToken": "YOUR_VALIDATION_TOKEN"
 }

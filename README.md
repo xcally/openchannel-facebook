@@ -24,10 +24,12 @@ Please see `config.json` in the root folder if you want to change the default ap
 
 ```javascript
 {
-  "email": "YOUR_FACEBOOK_EMAIL",
-  "password": "YOUR_FACEBOOK_PASSWORD",
   "url": "http://YOUR_MOTION_DOMAIN/api/openchannel/accounts/OPENCHANNEL_INTEGRATION_ID/receive",
-  "port": 3000
+  "sendMessagePath": "/YOUR_PATH",
+  "port": 3001,
+  "appSecret": "YOUR_APP_SECRET",
+  "pageAccessToken": "YOUR_PAGE_ACCESS_TOKEN",
+  "validationToken": "YOUR_VALIDATION_TOKEN"
 }
 ```
 
@@ -41,14 +43,9 @@ Please check to have configured correctly the ["Send" web hook](https://wiki.xca
 
 Please check if the nodejs application is up!
 
-* ERR! Error in login: Couldn't login. Facebook might have blocked this account.
+* Cannot message users who are not admins, developers or testers of the app until pages_messaging permission is reviewed and the app is live.
 
-Please check everything is ok with your Facebook account.
-Sometimes Facebook can block the account for safety reasons; please check your e-mail and your account to enable it again.
-
-* Wrong Username/Password
-
-Please check, in the config.json file, that username and password are correct.
+The Facebook Application is not approved by Facebook and you are not able to send message using the application: you need to publish the Facebook application.
 
 ## Enjoy
 
