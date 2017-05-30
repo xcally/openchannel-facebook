@@ -20,18 +20,7 @@ xCALLY Motion provides all the necessary tools to receive and send messages. All
 
 ## Configuration
 
-Please see `config.json` in the root folder if you want to change the default application settings.
-
-```javascript
-{
-  "url": "http://YOUR_MOTION_DOMAIN/api/openchannel/accounts/OPENCHANNEL_INTEGRATION_ID/receive",
-  "sendMessagePath": "/YOUR_PATH",
-  "port": 3001,
-  "appSecret": "YOUR_APP_SECRET",
-  "pageAccessToken": "YOUR_PAGE_ACCESS_TOKEN",
-  "validationToken": "YOUR_VALIDATION_TOKEN"
-}
-```
+Please follow our [documentation](https://wiki.xcallymotion.com/display/XMD/Develop+your+favorite+customer+service+channel) to configure properly Facebook integration with xCALLY Motion OpenChannel.
 
 ## Troubleshooting
 
