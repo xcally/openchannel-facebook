@@ -195,17 +195,20 @@ function receivedMessage(event) {
 }
 
 app.post(SEND_MESSAGE_PATH, function(req, res) {
-  logger.info("Sending message from %s to %s with message:", req.body.from, req.body.to);
+  if(!req.body.Contact){
+    throw new Error("Unable to retrieve contact!");
+  }
+  logger.info("Sending message to %s with message: %s", req.body.Contact.facebook, req.body.body);
 
   return request({
-      uri: 'https://graph.facebook.com/v2.9/me/messages',
+      uri: 'https://graph.facebook.com/v2.10/me/messages',
       qs: {
         access_token: PAGE_ACCESS_TOKEN
       },
       method: 'POST',
       body: {
         recipient: {
-          id: req.body.to
+          id: req.body.Contact.facebook
         },
         message: {
           text: req.body.body,
