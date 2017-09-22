@@ -1,6 +1,6 @@
 {
   "url": "http://YOUR_MOTION_DOMAIN/api/openchannel/accounts/OPENCHANNEL_INTEGRATION_ID/notify(USE receive INSTEAD OF notify IN CASE OF MOTION V1)",
-   "sendMessagePath": "/YOUR_PATH",
+  "sendMessagePath": "/YOUR_PATH",
   "port": 3001,
   "appSecret": "YOUR_APP_SECRET",
   "pageAccessToken": "YOUR_PAGE_ACCESS_TOKEN",
