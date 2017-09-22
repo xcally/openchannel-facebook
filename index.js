@@ -7,7 +7,10 @@ var express = require('express'),
   fs = require('fs'),
   util = require('util'),
   crypto = require('crypto'),
-  morgan = require('morgan');
+  morgan = require('morgan'),
+  logger = require('./logger.js')('openchannel-facebook'),
+  moment = require('moment');
+
 
 var app = express();
 
@@ -15,13 +18,20 @@ app.use(bodyParser.json({
   verify: verifyRequestSignature
 }));
 
-app.use(morgan('combined'));
+morgan.token('remote-address', function(req, res) {
+  return req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'] : req.connection.remoteAddress || req.ip;
+});
+morgan.token('datetime', function(req, res) {
+  return moment().format('YYYY-MM-DD HH:mm:ss');
+});
+
+app.use(morgan('VERBOSE [:datetime] [REQUEST] [OPENCHANNEL-FACEBOOK] - :method :remote-address :remote-user :url :status :response-time ms - :res[content-length]'));
 
 try {
   var configJSON = fs.readFileSync(__dirname + '/config.json');
   var config = JSON.parse(configJSON.toString());
 } catch (e) {
-  console.error('File config.json not found or is invalid: ' + e.message);
+  logger.error('File config.json not found or is invalid: ' + e.message);
   process.exit(1);
 }
 
@@ -40,7 +50,7 @@ var MOTION_URL = config.url;
 var SEND_MESSAGE_PATH = config.sendMessagePath;
 
 if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && MOTION_URL && SEND_MESSAGE_PATH)) {
-  console.error("Missing config values");
+  logger.error("Missing config values");
   process.exit(1);
 }
 
@@ -77,10 +87,10 @@ function verifyRequestSignature(req, res, buf) {
  */
 app.get('/webhook', function(req, res) {
   if (req.query['hub.mode'] === 'subscribe' && req.query['hub.verify_token'] === VALIDATION_TOKEN) {
-    console.log("Validating webhook");
+    logger.info("Validating webhook");
     res.status(200).send(req.query['hub.challenge']);
   } else {
-    console.error("Failed validation. Make sure the validation tokens match.");
+    logger.error("Failed validation. Make sure the validation tokens match.");
     res.sendStatus(403);
   }
 });
@@ -94,7 +104,6 @@ app.get('/webhook', function(req, res) {
  */
 app.post('/webhook', function(req, res) {
   var data = req.body;
-
   // Make sure this is a page subscription
   if (data.object == 'page') {
     // Iterate over each entry
@@ -109,12 +118,12 @@ app.post('/webhook', function(req, res) {
           if (messagingEvent.message) {
             receivedMessage(messagingEvent);
           } else {
-            console.log("Webhook received unknown messagingEvent: ", messagingEvent);
+            logger.info("Webhook received unknown messagingEvent: ", messagingEvent);
           }
         });
       } else if (pageEntry.changes) {
         pageEntry.changes.forEach(function(changingEvent) {
-          console.log('changingEvent', changingEvent);
+          logger.info('changingEvent', changingEvent);
         });
       }
     });
@@ -141,12 +150,12 @@ function receivedMessage(event) {
   var timeOfMessage = event.timestamp;
   var message = event.message;
 
-  console.log("Received message for user %d and page %d at %d with message:", senderID, recipientID, timeOfMessage);
-  console.log(JSON.stringify(message));
+  logger.info("Received message for user %d and page %d at %d with message:", senderID, recipientID, timeOfMessage);
+  logger.info(JSON.stringify(message));
 
   var options = {
     method: 'GET',
-    uri: 'https://graph.facebook.com/v2.9/' + senderID,
+    uri: 'https://graph.facebook.com/v2.10/' + senderID,
     qs: {
       fields: 'first_name,last_name,profile_pic,locale,timezone,gender',
       access_token: PAGE_ACCESS_TOKEN
@@ -163,7 +172,12 @@ function receivedMessage(event) {
           from: senderID,
           body: message.text || '',
           to: recipientID,
-          name: util.format('%s %s', parsedBody.first_name, parsedBody.last_name)
+          name: util.format('%s %s', parsedBody.first_name, parsedBody.last_name),// V1
+          firstName: parsedBody.first_name,// V2
+          lastName: parsedBody.last_name,// V2
+          facebook: senderID,// V2
+          mapKey: 'facebook',// V2
+          phone: 'none'// V2
         },
         json: true
       };
@@ -172,17 +186,16 @@ function receivedMessage(event) {
 
     })
     .then(function(result) {
-      console.log('Message sent to xCALLY Motion server');
+      logger.info('Message sent to xCALLY Motion server');
     })
     .catch(function(err) {
-      console.error('Error forwarding message to xCALLY Motion server', err);
+      logger.error('Error forwarding message to xCALLY Motion server', err);
     });
 
 }
 
 app.post(SEND_MESSAGE_PATH, function(req, res) {
-  console.log("Sending message from %s to %s with message:", req.body.from, req.body.to);
-  console.log(req.body.body);
+  logger.info("Sending message from %s to %s with message:", req.body.from, req.body.to);
 
   return request({
       uri: 'https://graph.facebook.com/v2.9/me/messages',
@@ -202,17 +215,17 @@ app.post(SEND_MESSAGE_PATH, function(req, res) {
       json: true
     })
     .then(function(result) {
-      console.log('Message correctly sent to Facebook with id %s to %s:', result.message_id, result.recipient_id);
+      logger.info('Message correctly sent to Facebook with id %s to %s:', result.message_id, result.recipient_id);
       return res.status(200).send(result);
     })
     .catch(function(err) {
-      console.error('Error sending message to %s:', req.body.to);
-      console.error(err);
+      logger.error('Error sending message to %s:', req.body.to);
+      logger.error(err);
       return res.status(400).send(err);
     });
 });
 
 // Start server
 app.listen(app.get('port'), app.get('ipaddress'), function() {
-  console.log(util.format('openchannel-facebook app is running on port %d on %s', app.get('port'), app.get('ipaddress')));
+  logger.info(util.format('openchannel-facebook app is running on port %d on %s', app.get('port'), app.get('ipaddress')));
 });
