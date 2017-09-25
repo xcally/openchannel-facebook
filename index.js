@@ -175,7 +175,6 @@ function receivedMessage(event) {
           name: util.format('%s %s', parsedBody.first_name, parsedBody.last_name),// V1
           firstName: parsedBody.first_name,// V2
           lastName: parsedBody.last_name,// V2
-          facebook: senderID,// V2
           mapKey: 'facebook',// V2
           phone: 'none'// V2
         },
