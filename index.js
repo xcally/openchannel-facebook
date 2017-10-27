@@ -163,6 +163,23 @@ function receivedMessage(event) {
     json: true
   };
 
+  var messageContent = '';
+  if(message.text){
+    messageContent += message.text;
+  }
+
+  if(message.attachments){
+    if(messageContent){
+      messageContent += '\n';
+    }
+    for(var i=0, length = message.attachments.length;i<length; i++){
+      if(message.attachments[i].payload && message.attachments[i].payload.url){
+        messageContent += (messageContent ? '\n' : '');
+        messageContent += message.attachments[i].payload.url;
+      }
+    }
+  }
+
   return request(options)
     .then(function(parsedBody) {
       options = {
@@ -170,7 +187,7 @@ function receivedMessage(event) {
         uri: MOTION_URL,
         body: {
           from: senderID,
-          body: message.text || '',
+          body: messageContent,
           to: recipientID,
           name: util.format('%s %s', parsedBody.first_name, parsedBody.last_name),// V1
           firstName: parsedBody.first_name,// V2
