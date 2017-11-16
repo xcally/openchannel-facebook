@@ -247,14 +247,6 @@ function sendMessageToFacebook(msg, res, to, deleteTempFile, filename) {
 app.post(SEND_MESSAGE_PATH, function(req, res) {
   var to = req.body.Contact ? req.body.Contact.facebook : req.body.to;
   logger.info("Sending message to %s with message: %s", to, JSON.stringify(req.body));
-  if (!req.body.body) {
-    logger.error('Unable to get attachment filename!');
-    return res.status(500).send({
-      message: 'Unable to get attachment filename!'
-    });
-  }
-
-  var fileExtension = path.extname(req.body.body);
 
   var msg = {
     uri: 'https://graph.facebook.com/v2.10/me/messages',
@@ -265,7 +257,14 @@ app.post(SEND_MESSAGE_PATH, function(req, res) {
     json: true
   };
   if (req.body.AttachmentId) {
+    if (!req.body.body) {
+      logger.error('Unable to get attachment filename!');
+      return res.status(500).send({
+        message: 'Unable to get attachment filename!'
+      });
+    }
 
+    var fileExtension = path.extname(req.body.body);
     var filename = moment().unix() + fileExtension;
     var w = fs.createWriteStream(__dirname + '/' + filename);
 
