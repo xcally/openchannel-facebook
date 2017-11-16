@@ -4,5 +4,9 @@
   "port": 3001,
   "appSecret": "YOUR_APP_SECRET",
   "pageAccessToken": "YOUR_PAGE_ACCESS_TOKEN",
-  "validationToken": "YOUR_VALIDATION_TOKEN"
+  "validationToken": "YOUR_VALIDATION_TOKEN",
+  "auth" : {
+    "username": "",
+    "password": "",
+  }
 }
