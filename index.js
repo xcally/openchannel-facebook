@@ -9,7 +9,11 @@ var express = require('express'),
   crypto = require('crypto'),
   morgan = require('morgan'),
   logger = require('./logger.js')('openchannel-facebook'),
-  moment = require('moment');
+  moment = require('moment'),
+  url = require('url'),
+  nodeRequest = require('request'),
+  path = require('path');
+
 
 
 var app = express();
@@ -49,7 +53,14 @@ var MOTION_URL = config.url;
 // Path chosen to send messages from Motion OpenChannel Inbox to Facebook
 var SEND_MESSAGE_PATH = config.sendMessagePath;
 
-if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && MOTION_URL && SEND_MESSAGE_PATH)) {
+if (MOTION_URL) {
+  var myUrl = url.parse(MOTION_URL);
+  var DOMAIN = myUrl.protocol + '//' + myUrl.host;
+}
+var USERNAME = config.auth.username;
+var PASSWORD = config.auth.password;
+
+if (!(APP_SECRET || VALIDATION_TOKEN || PAGE_ACCESS_TOKEN || MOTION_URL || SEND_MESSAGE_PATH || DOMAIN || USERNAME || PASSWORD)) {
   logger.error("Missing config values");
   process.exit(1);
 }
@@ -164,16 +175,16 @@ function receivedMessage(event) {
   };
 
   var messageContent = '';
-  if(message.text){
+  if (message.text) {
     messageContent += message.text;
   }
 
-  if(message.attachments){
-    if(messageContent){
+  if (message.attachments) {
+    if (messageContent) {
       messageContent += '\n';
     }
-    for(var i=0, length = message.attachments.length;i<length; i++){
-      if(message.attachments[i].payload && message.attachments[i].payload.url){
+    for (var i = 0, length = message.attachments.length; i < length; i++) {
+      if (message.attachments[i].payload && message.attachments[i].payload.url) {
         messageContent += (messageContent ? '\n' : '');
         messageContent += message.attachments[i].payload.url;
       }
@@ -189,11 +200,11 @@ function receivedMessage(event) {
           from: senderID,
           body: messageContent,
           to: recipientID,
-          name: util.format('%s %s', parsedBody.first_name, parsedBody.last_name),// V1
-          firstName: parsedBody.first_name,// V2
-          lastName: parsedBody.last_name,// V2
-          mapKey: 'facebook',// V2
-          phone: 'none'// V2
+          name: util.format('%s %s', parsedBody.first_name, parsedBody.last_name), // V1
+          firstName: parsedBody.first_name, // V2
+          lastName: parsedBody.last_name, // V2
+          mapKey: 'facebook', // V2
+          phone: 'none' // V2
         },
         json: true
       };
@@ -210,36 +221,102 @@ function receivedMessage(event) {
 
 }
 
-app.post(SEND_MESSAGE_PATH, function(req, res) {
-  var to = req.body.Contact ? req.body.Contact.facebook : req.body.to;
-  logger.info("Sending message to %s with message: %s", to, req.body.body);
-
-  return request({
-      uri: 'https://graph.facebook.com/v2.10/me/messages',
-      qs: {
-        access_token: PAGE_ACCESS_TOKEN
-      },
-      method: 'POST',
-      body: {
-        recipient: {
-          id: to
-        },
-        message: {
-          text: req.body.body,
-          metadata: "DEVELOPER_DEFINED_METADATA"
-        }
-      },
-      json: true
-    })
+function sendMessageToFacebook(msg, res, to, deleteTempFile, filename) {
+  logger.info('msg is', msg);
+  return request(msg)
     .then(function(result) {
       logger.info('Message correctly sent to Facebook with id %s to %s:', result.message_id, result.recipient_id);
+      if (deleteTempFile) {
+        fs.unlink(__dirname + '/' + filename, function(err) {
+          if (err) {
+            logger.error('Unable to delete temp file', err);
+          } else {
+            logger.debug('Temp file correctly deleted!');
+          }
+        });
+      }
       return res.status(200).send(result);
     })
     .catch(function(err) {
-      logger.error('Error sending message to %s:', req.body.to);
+      logger.error('Error sending message to %s:', to);
       logger.error(err);
       return res.status(400).send(err);
     });
+}
+
+app.post(SEND_MESSAGE_PATH, function(req, res) {
+  var to = req.body.Contact ? req.body.Contact.facebook : req.body.to;
+  logger.info("Sending message to %s with message: %s", to, JSON.stringify(req.body));
+  if (!req.body.body) {
+    logger.error('Unable to get attachment filename!');
+    return res.status(500).send({
+      message: 'Unable to get attachment filename!'
+    });
+  }
+
+  var fileExtension = path.extname(req.body.body);
+
+  var msg = {
+    uri: 'https://graph.facebook.com/v2.10/me/messages',
+    qs: {
+      access_token: PAGE_ACCESS_TOKEN
+    },
+    method: 'POST',
+    json: true
+  };
+  if (req.body.AttachmentId) {
+
+    var filename = moment().unix() + fileExtension;
+    var w = fs.createWriteStream(__dirname + '/' + filename);
+
+    nodeRequest({
+        uri: DOMAIN + '/api/attachments/' + req.body.AttachmentId + '/download',
+        method: 'GET',
+        auth: {
+          user: USERNAME,
+          pass: PASSWORD
+        }
+      })
+      .on('error', function(err) {
+        logger.error('Error getting attachment file while sending message to %s:', to);
+        logger.error(err);
+        return res.status(500).send(err);
+      })
+      .pipe(w);
+
+    w.on('finish', function() {
+      try {
+        msg.formData = {
+          recipient: JSON.stringify({
+            id: to
+          }),
+          message: JSON.stringify({
+            attachment: {
+              type: 'file',
+              payload: {}
+            }
+          }),
+          filedata: fs.createReadStream(__dirname + '/' + filename)
+        };
+      } catch (err) {
+        logger.error('Error creating attachment file while sending message to %s:', to);
+        logger.error(err);
+        return res.status(500).send(err);
+      }
+      return sendMessageToFacebook(msg, res, to, true, filename);
+    });
+  } else {
+    msg.body = {
+      recipient: {
+        id: to
+      },
+      message: {
+        text: req.body.body,
+        metadata: "DEVELOPER_DEFINED_METADATA"
+      }
+    };
+    return sendMessageToFacebook(msg, res, to);
+  }
 });
 
 // Start server
