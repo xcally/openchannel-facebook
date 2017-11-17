@@ -147,6 +147,117 @@ app.post('/webhook', function(req, res) {
   }
 });
 
+function sendMessageToMotion(senderID, messageContent, recipientID, attachmentId, tempName, originalFilename) {
+  var options = {
+    method: 'GET',
+    uri: 'https://graph.facebook.com/v2.10/' + senderID,
+    qs: {
+      fields: 'first_name,last_name,profile_pic,locale,timezone,gender',
+      access_token: PAGE_ACCESS_TOKEN
+    },
+    json: true
+  };
+
+  return request(options)
+    .then(function(parsedBody) {
+      var msgOptions = {
+        method: 'POST',
+        uri: MOTION_URL,
+        body: {
+          from: senderID,
+          body: messageContent || originalFilename,
+          to: recipientID,
+          AttachmentId: attachmentId || null,
+          name: util.format('%s %s', parsedBody.first_name, parsedBody.last_name), // V1
+          firstName: parsedBody.first_name, // V2
+          lastName: parsedBody.last_name, // V2
+          mapKey: 'facebook', // V2
+          phone: 'none' // V2
+        },
+        json: true
+      };
+
+      return request(msgOptions);
+
+    })
+    .then(function(result) {
+      if (tempName) {
+        deleteTempFile(__dirname + '/' + tempName);
+      }
+      logger.info('Message sent to xCALLY Motion server');
+    })
+    .catch(function(err) {
+      logger.error('Error forwarding message to xCALLY Motion server', err);
+    });
+}
+
+function deleteTempFile(path) {
+  fs.unlink(path, function(err) {
+    if (err) {
+      logger.error('Unable to delete temp file', err);
+    } else {
+      logger.debug('Temp file correctly deleted!');
+    }
+  });
+}
+
+function sendAttachment(attachments, i, senderID, messageContent, recipientID){
+  var myUrl = url.parse(attachments[i].payload.url);
+  var tempName = moment().unix() + path.extname(myUrl.pathname);
+  var originalFilename = path.basename(myUrl.pathname);
+  var w = fs.createWriteStream(__dirname + '/' + tempName);
+  nodeRequest({
+      uri: attachments[i].payload.url,
+      method: 'GET'
+    })
+    .pipe(w)
+    .on('error', function(err) {
+      var errorMessage = 'Error getting attachment file from facebook!';
+      logger.error(errorMessage);
+      logger.error(err);
+      return sendMessageToMotion(senderID, errorMessage, recipientID);
+    });
+  w.on('finish', function() {
+    var uploadOptions = {
+      method: 'POST',
+      uri: DOMAIN + '/api/attachments',
+      auth: {
+        user: USERNAME,
+        pass: PASSWORD
+      },
+      formData: {
+        file: {
+          value: fs.createReadStream(__dirname + '/' + tempName),
+          options: {
+            filename: originalFilename
+          }
+        }
+      },
+      json: true
+    };
+
+    return request(uploadOptions)
+      .then(function(attachment) {
+        if (!attachment) {
+          throw new Error('Unable to get uploaded attachment id!');
+        }
+        return sendMessageToMotion(senderID, messageContent, recipientID, attachment.id, tempName, originalFilename);
+      })
+      .then(function() {
+        i++;
+        if(attachments[i]){
+          sendAttachment(attachments, i, senderID, messageContent, recipientID);
+        }
+      })
+      .catch(function(err) {
+        var errorMessage = 'Error uploading attachment to xCALLY Motion server';
+        logger.error(errorMessage, err);
+        deleteTempFile(__dirname + '/' + tempName);
+        return sendMessageToMotion(senderID, errorMessage, recipientID);
+      });
+    });
+}
+
 /*
  * Message Event
  *
@@ -162,78 +273,23 @@ function receivedMessage(event) {
   var message = event.message;
 
   logger.info("Received message for user %d and page %d at %d with message:", senderID, recipientID, timeOfMessage);
-  logger.info(JSON.stringify(message));
 
-  var options = {
-    method: 'GET',
-    uri: 'https://graph.facebook.com/v2.10/' + senderID,
-    qs: {
-      fields: 'first_name,last_name,profile_pic,locale,timezone,gender',
-      access_token: PAGE_ACCESS_TOKEN
-    },
-    json: true
-  };
-
-  var messageContent = '';
-  if (message.text) {
-    messageContent += message.text;
-  }
+  var messageContent = message.text || '';
 
   if (message.attachments) {
-    if (messageContent) {
-      messageContent += '\n';
-    }
-    for (var i = 0, length = message.attachments.length; i < length; i++) {
-      if (message.attachments[i].payload && message.attachments[i].payload.url) {
-        messageContent += (messageContent ? '\n' : '');
-        messageContent += message.attachments[i].payload.url;
-      }
-    }
+    sendAttachment(message.attachments, 0, senderID, messageContent, recipientID);
+  } else {
+    return sendMessageToMotion(senderID, messageContent, recipientID);
   }
-
-  return request(options)
-    .then(function(parsedBody) {
-      options = {
-        method: 'POST',
-        uri: MOTION_URL,
-        body: {
-          from: senderID,
-          body: messageContent,
-          to: recipientID,
-          name: util.format('%s %s', parsedBody.first_name, parsedBody.last_name), // V1
-          firstName: parsedBody.first_name, // V2
-          lastName: parsedBody.last_name, // V2
-          mapKey: 'facebook', // V2
-          phone: 'none' // V2
-        },
-        json: true
-      };
-
-      return request(options);
-
-    })
-    .then(function(result) {
-      logger.info('Message sent to xCALLY Motion server');
-    })
-    .catch(function(err) {
-      logger.error('Error forwarding message to xCALLY Motion server', err);
-    });
-
 }
 
-function sendMessageToFacebook(msg, res, to, deleteTempFile, filename) {
+function sendMessageToFacebook(msg, res, to, filename) {
   logger.info('msg is', msg);
   return request(msg)
     .then(function(result) {
       logger.info('Message correctly sent to Facebook with id %s to %s:', result.message_id, result.recipient_id);
-      if (deleteTempFile) {
-        fs.unlink(__dirname + '/' + filename, function(err) {
-          if (err) {
-            logger.error('Unable to delete temp file', err);
-          } else {
-            logger.debug('Temp file correctly deleted!');
-          }
-        });
+      if (filename) {
+        deleteTempFile(__dirname + '/' + filename);
       }
       return res.status(200).send(result);
     })
@@ -302,7 +358,7 @@ app.post(SEND_MESSAGE_PATH, function(req, res) {
         logger.error(err);
         return res.status(500).send(err);
       }
-      return sendMessageToFacebook(msg, res, to, true, filename);
+      return sendMessageToFacebook(msg, res, to, filename);
     });
   } else {
     msg.body = {
