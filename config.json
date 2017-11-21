@@ -7,6 +7,6 @@
   "validationToken": "YOUR_VALIDATION_TOKEN",
   "auth" : {
     "username": "",
-    "password": "",
+    "password": ""
   }
 }
