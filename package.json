@@ -23,13 +23,14 @@
   },
   "homepage": "https://github.com/xcally/openchannel-facebook#readme",
   "dependencies": {
+    "bluebird": "^3.5.1",
     "body-parser": "^1.15.2",
     "config": "^1.20.4",
     "express": "^4.14.0",
-    "morgan": "^1.8.2",
-    "request-promise": "^3.0.0",
     "lodash": "^4.17.4",
     "moment": "^2.18.1",
+    "morgan": "^1.8.2",
+    "request-promise": "^3.0.0",
     "winston": "^2.3.1"
   }
 }
