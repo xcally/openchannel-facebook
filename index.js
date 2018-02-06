@@ -12,7 +12,9 @@ var express = require('express'),
   moment = require('moment'),
   url = require('url'),
   nodeRequest = require('request'),
-  path = require('path');
+  path = require('path'),
+  BPromise = require('bluebird');
+
 
 
 
@@ -42,12 +44,14 @@ try {
 app.set('port', config.port || 3001);
 app.set('ipaddress', config.ipaddress || 'localhost');
 
+var fbPostEvents = ['post', 'comment'];
+
 // App Secret can be retrieved from the App Dashboard
 var APP_SECRET = config.appSecret;
 // Arbitrary value used to validate a webhook
 var VALIDATION_TOKEN = config.validationToken;
 // Generate a page access token for your page from the App Dashboard
-var PAGE_ACCESS_TOKEN = config.pageAccessToken;
+var MESSAGING_TOKEN = config.messagingToken;
 // URL can be retrieve from the Motion OpenChannel Account
 var MOTION_URL = config.url;
 // Path chosen to send messages from Motion OpenChannel Inbox to Facebook
@@ -60,7 +64,11 @@ if (MOTION_URL) {
 var USERNAME = config.auth.username;
 var PASSWORD = config.auth.password;
 
-if (!(APP_SECRET || VALIDATION_TOKEN || PAGE_ACCESS_TOKEN || MOTION_URL || SEND_MESSAGE_PATH || DOMAIN || USERNAME || PASSWORD)) {
+var SCREEN_NAME = config.screen_name;
+
+var API_VERSION = config.apiVersion || '2.10';
+
+if (!(APP_SECRET && VALIDATION_TOKEN && MESSAGING_TOKEN && MOTION_URL && SEND_MESSAGE_PATH && DOMAIN && USERNAME && PASSWORD && SCREEN_NAME)) {
   logger.error("Missing config values");
   process.exit(1);
 }
@@ -134,7 +142,9 @@ app.post('/webhook', function(req, res) {
         });
       } else if (pageEntry.changes) {
         pageEntry.changes.forEach(function(changingEvent) {
-          logger.info('changingEvent', changingEvent);
+          if(config.enablePosts && changingEvent.field === 'feed' && changingEvent.value && changingEvent.value.verb === 'add' && fbPostEvents.indexOf(changingEvent.value.item) >= 0 && (changingEvent.value.from && changingEvent.value.from.name !== SCREEN_NAME)){
+              receivedPostOrComment(changingEvent.value); //supported only in V2, enable it through config.json
+          }
         });
       }
     });
@@ -147,38 +157,89 @@ app.post('/webhook', function(req, res) {
   }
 });
 
-function sendMessageToMotion(senderID, messageContent, recipientID, attachmentId, tempName, originalFilename) {
-  var options = {
-    method: 'GET',
-    uri: 'https://graph.facebook.com/v2.10/' + senderID,
-    qs: {
-      fields: 'first_name,last_name,profile_pic,locale,timezone,gender',
-      access_token: PAGE_ACCESS_TOKEN
-    },
-    json: true
-  };
+function receivedPostOrComment(event){
+     var urlParams = event.post_id.split('_');
+     var params = {
+         senderID : event.from.id,
+         threadId : event.post_id,
+         externalUrl : util.format('https://www.facebook.com/%s/posts/%s',urlParams[0], urlParams[1]),
+         message : event.message || '',
+         senderName : event.from.name
+     };
 
-  return request(options)
+         logger.info(util.format("Received %s for user %s with message: %s", event.item, params.senderID, params.message));
+
+         var attachments = [];
+         if(event.photo){//multiple??
+             attachments.push({payload:{url:event.photo}});
+         }
+         if(event.video){//multiple??
+             attachments.push({payload:{url:event.video}});
+         }
+         //sticker?? link??
+
+         if (attachments.length) {
+           sendAttachment(attachments, 0, params.senderID, params.message, null, params.threadId, params.externalUrl, params.senderName);
+         } else {
+           return sendMessageToMotion(params.senderID, params.message, null, null, null, null, params.threadId, params.externalUrl, params.senderName);
+         }
+}
+
+function sendMessageToMotion(senderID, messageContent, recipientID, attachmentId, tempName, originalFilename, threadId, externalUrl, facebookCommentName) {
+
+    var msgOptions = {
+      method: 'POST',
+      uri: MOTION_URL,
+      body: {
+        from: senderID,
+        body: messageContent || originalFilename,
+        to: recipientID,// V1
+        AttachmentId: attachmentId || null,
+        mapKey: 'facebook', // V2
+        phone: 'none', // V2
+        threadId: threadId, // V2
+        externalUrl: externalUrl // V2
+      },
+      json: true
+    };
+
+    return BPromise.resolve()
+    .then(function(){
+        if(facebookCommentName){
+            msgOptions.body.description =  'Created from facebook post/comment';
+            msgOptions.body.name =  facebookCommentName; // V1
+            if(facebookCommentName.indexOf(' ') >= 0){
+                var parsedName = facebookCommentName.split(/\s(.+)/);
+                msgOptions.body.firstName =  parsedName[0]; // V2
+                msgOptions.body.lastName =  parsedName[1]; // V2
+            }
+            else {
+                msgOptions.body.firstName = facebookCommentName; // V2
+            }
+            return null;
+        }
+
+        msgOptions.body.description =  'Created from facebook message';
+
+        var options = {
+          method: 'GET',
+          uri: util.format('https://graph.facebook.com/v%s/%s', API_VERSION, senderID),
+          qs: {
+            fields: 'first_name,last_name,profile_pic,locale,timezone,gender',
+            access_token: MESSAGING_TOKEN
+          },
+          json: true
+        };
+
+        return request(options);
+    })
     .then(function(parsedBody) {
-      var msgOptions = {
-        method: 'POST',
-        uri: MOTION_URL,
-        body: {
-          from: senderID,
-          body: messageContent || originalFilename,
-          to: recipientID,
-          AttachmentId: attachmentId || null,
-          name: util.format('%s %s', parsedBody.first_name, parsedBody.last_name), // V1
-          firstName: parsedBody.first_name, // V2
-          lastName: parsedBody.last_name, // V2
-          mapKey: 'facebook', // V2
-          phone: 'none' // V2
-        },
-        json: true
-      };
-
-      return request(msgOptions);
-
+        if(parsedBody){
+            msgOptions.body.name =  util.format('%s %s', parsedBody.first_name, parsedBody.last_name); // V1
+            msgOptions.body.firstName =  parsedBody.first_name; // V2
+            msgOptions.body.lastName =  parsedBody.last_name; // V2
+        }
+        return request(msgOptions);
     })
     .then(function(result) {
       if (tempName) {
@@ -201,7 +262,7 @@ function deleteTempFile(path) {
   });
 }
 
-function sendAttachment(attachments, i, senderID, messageContent, recipientID){
+function sendAttachment(attachments, i, senderID, messageContent, recipientID, threadId, externalUrl, facebookCommentName){
   var myUrl = url.parse(attachments[i].payload.url);
   var tempName = moment().unix() + path.extname(myUrl.pathname);
   var originalFilename = path.basename(myUrl.pathname);
@@ -215,7 +276,7 @@ function sendAttachment(attachments, i, senderID, messageContent, recipientID){
       var errorMessage = 'Error getting attachment file from facebook!';
       logger.error(errorMessage);
       logger.error(err);
-      return sendMessageToMotion(senderID, errorMessage, recipientID);
+      return sendMessageToMotion(senderID, errorMessage, recipientID, null, null, null, threadId, externalUrl, facebookCommentName);
     });
   w.on('finish', function() {
     var uploadOptions = {
@@ -241,19 +302,19 @@ function sendAttachment(attachments, i, senderID, messageContent, recipientID){
         if (!attachment) {
           throw new Error('Unable to get uploaded attachment id!');
         }
-        return sendMessageToMotion(senderID, messageContent, recipientID, attachment.id, tempName, originalFilename);
+        return sendMessageToMotion(senderID, messageContent, recipientID, attachment.id, tempName, originalFilename, threadId, externalUrl, facebookCommentName);
       })
       .then(function() {
         i++;
         if(attachments[i]){
-          sendAttachment(attachments, i, senderID, messageContent, recipientID);
+          sendAttachment(attachments, i, senderID, messageContent, recipientID, threadId, externalUrl, facebookCommentName);
         }
       })
       .catch(function(err) {
         var errorMessage = 'Error uploading attachment to xCALLY Motion server';
         logger.error(errorMessage, err);
         deleteTempFile(__dirname + '/' + tempName);
-        return sendMessageToMotion(senderID, errorMessage, recipientID);
+        return sendMessageToMotion(senderID, errorMessage, recipientID, null, null, null, threadId, externalUrl, facebookCommentName);
       });
     });
 }
@@ -272,7 +333,7 @@ function receivedMessage(event) {
   var timeOfMessage = event.timestamp;
   var message = event.message;
 
-  logger.info("Received message for user %d and page %d at %d with message:", senderID, recipientID, timeOfMessage);
+  logger.info(util.format("Received message for user %d and page %d with message: %d", senderID, recipientID, message));
 
   var messageContent = message.text || '';
 
@@ -283,94 +344,138 @@ function receivedMessage(event) {
   }
 }
 
-function sendMessageToFacebook(msg, res, to, filename) {
-  logger.info('msg is', msg);
-  return request(msg)
+function sendRequestToFacebook(params, res, to, filename) {
+  logger.info('Request is', params);
+  return request(params)
     .then(function(result) {
-      logger.info('Message correctly sent to Facebook with id %s to %s:', result.message_id, result.recipient_id);
+      logger.info('Request correctly sent to Facebook toward', to);
       if (filename) {
         deleteTempFile(__dirname + '/' + filename);
       }
       return res.status(200).send(result);
     })
     .catch(function(err) {
-      logger.error('Error sending message to %s:', to);
+      logger.error('Error sending request to %s:', to);
       logger.error(err);
       return res.status(400).send(err);
     });
 }
 
 app.post(SEND_MESSAGE_PATH, function(req, res) {
-  var to = req.body.Contact ? req.body.Contact.facebook : req.body.to;
-  logger.info("Sending message to %s with message: %s", to, JSON.stringify(req.body));
+  if(req.body.Interaction && req.body.Interaction.threadId){
+      logger.info('Sending a comment to facebook post', req.body.Interaction.threadId);
+      if(req.body.AttachmentId){
+          logger.info('Attachment on comments are not yet supported!');
+          return res.status(500).send({
+            message: 'Unable to send attachment (not yet supported)!'
+          });
+      }
 
-  var msg = {
-    uri: 'https://graph.facebook.com/v2.10/me/messages',
-    qs: {
-      access_token: PAGE_ACCESS_TOKEN
-    },
-    method: 'POST',
-    json: true
-  };
-  if (req.body.AttachmentId) {
-    if (!req.body.body) {
-      logger.error('Unable to get attachment filename!');
-      return res.status(500).send({
-        message: 'Unable to get attachment filename!'
-      });
-    }
-
-    var fileExtension = path.extname(req.body.body);
-    var filename = moment().unix() + fileExtension;
-    var w = fs.createWriteStream(__dirname + '/' + filename);
-
-    nodeRequest({
-        uri: DOMAIN + '/api/attachments/' + req.body.AttachmentId + '/download',
+      var options = {
         method: 'GET',
-        auth: {
-          user: USERNAME,
-          pass: PASSWORD
-        }
-      })
-      .on('error', function(err) {
-        logger.error('Error getting attachment file while sending message to %s:', to);
-        logger.error(err);
-        return res.status(500).send(err);
-      })
-      .pipe(w);
+        uri: util.format('https://graph.facebook.com/v%s/me', API_VERSION),
+        qs: {
+          access_token: MESSAGING_TOKEN,
+          fields: 'access_token'
+        },
+        json: true
+      };
 
-    w.on('finish', function() {
-      try {
-        msg.formData = {
-          recipient: JSON.stringify({
-            id: to
-          }),
-          message: JSON.stringify({
-            attachment: {
-              type: 'file',
-              payload: {}
+      return request(options)
+      .then(function(page){
+
+             if(!page){
+              throw new Error('Facebook page not found!');
+             }
+
+             var params = {
+                uri: util.format('https://graph.facebook.com/v%s/%s/comments', API_VERSION, req.body.Interaction.threadId),
+                qs: {
+                  access_token: page.access_token,
+                  message: req.body.body
+                },
+                method: 'POST',
+                json: true
+              };
+              return sendRequestToFacebook(params, res, util.format('post with id %s', req.body.Interaction.threadId));
+     })
+     .catch(function(err) {
+       logger.error('Error on page token request/ facebook post:', err);
+     });
+  }
+  else{
+    var to = req.body.Contact ? req.body.Contact.facebook : req.body.to;
+    logger.info("Sending message to %s with message: %s", to, JSON.stringify(req.body));
+    var msg = {
+        uri: util.format('https://graph.facebook.com/v%s/me/messages', API_VERSION),
+        qs: {
+          access_token: MESSAGING_TOKEN
+        },
+        method: 'POST',
+        json: true
+      };
+      if (req.body.AttachmentId) {
+        if (!req.body.body) {
+          logger.error('Unable to get attachment filename!');
+          return res.status(500).send({
+            message: 'Unable to get attachment filename!'
+          });
+        }
+
+        var fileExtension = path.extname(req.body.body);
+        var filename = moment().unix() + fileExtension;
+        var w = fs.createWriteStream(__dirname + '/' + filename);
+
+        nodeRequest({
+            uri: DOMAIN + '/api/attachments/' + req.body.AttachmentId + '/download',
+            method: 'GET',
+            auth: {
+              user: USERNAME,
+              pass: PASSWORD
             }
-          }),
-          filedata: fs.createReadStream(__dirname + '/' + filename)
+          })
+          .on('error', function(err) {
+            logger.error('Error getting attachment file while sending message to %s:', to);
+            logger.error(err);
+            return res.status(500).send(err);
+          })
+          .pipe(w);
+
+        w.on('finish', function() {
+          try {
+            msg.formData = {
+              messaging_type: 'RESPONSE',
+              recipient: JSON.stringify({
+                id: to
+              }),
+              message: JSON.stringify({
+                attachment: {
+                  type: 'file',
+                  payload: {}
+                }
+              }),
+              filedata: fs.createReadStream(__dirname + '/' + filename)
+            };
+          } catch (err) {
+            logger.error('Error creating attachment file while sending message to %s:', to);
+            logger.error(err);
+            return res.status(500).send(err);
+          }
+          return sendRequestToFacebook(msg, res, to, filename);
+        });
+      } else {
+        msg.body = {
+          messaging_type: 'RESPONSE',
+          recipient: {
+            id: to
+          },
+          message: {
+            text: req.body.body,
+            metadata: "DEVELOPER_DEFINED_METADATA"
+          }
         };
-      } catch (err) {
-        logger.error('Error creating attachment file while sending message to %s:', to);
-        logger.error(err);
-        return res.status(500).send(err);
+        return sendRequestToFacebook(msg, res, to);
       }
-      return sendMessageToFacebook(msg, res, to, filename);
-    });
-  } else {
-    msg.body = {
-      recipient: {
-        id: to
-      },
-      message: {
-        text: req.body.body,
-        metadata: "DEVELOPER_DEFINED_METADATA"
-      }
-    };
-    return sendMessageToFacebook(msg, res, to);
   }
 });
 
