@@ -3,10 +3,13 @@
   "sendMessagePath": "/YOUR_PATH",
   "port": 3001,
   "appSecret": "YOUR_APP_SECRET",
-  "pageAccessToken": "YOUR_PAGE_ACCESS_TOKEN",
+  "messagingToken": "YOUR_MESSAGING_TOKEN",
   "validationToken": "YOUR_VALIDATION_TOKEN",
+  "screen_name": "FACEBOOK_ADMIN_NAME",
+  "enablePosts": false,
+  "apiVersion": "2.10",
   "auth" : {
-    "username": "",
-    "password": ""
+    "username": "FACEBOOK_ADMIN_USERNAME",
+    "password": "FACEBOOK_ADMIN_PASSWORD"
   }
 }
