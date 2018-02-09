@@ -45,6 +45,9 @@ app.set('port', config.port || 3001);
 app.set('ipaddress', config.ipaddress || 'localhost');
 
 var fbPostEvents = ['post', 'comment'];
+var fbPagePostEvents = ['share', 'status'];
+
+var allEvents = fbPostEvents.concat(fbPagePostEvents);
 
 // App Secret can be retrieved from the App Dashboard
 var APP_SECRET = config.appSecret;
@@ -142,7 +145,7 @@ app.post('/webhook', function(req, res) {
         });
       } else if (pageEntry.changes) {
         pageEntry.changes.forEach(function(changingEvent) {
-          if(config.enablePosts && changingEvent.field === 'feed' && changingEvent.value && changingEvent.value.verb === 'add' && fbPostEvents.indexOf(changingEvent.value.item) >= 0 && (changingEvent.value.from && changingEvent.value.from.name !== SCREEN_NAME)){
+          if(config.enablePosts && changingEvent.field === 'feed' && changingEvent.value && changingEvent.value.verb === 'add' && allEvents.indexOf(changingEvent.value.item) >= 0 && (changingEvent.value.from && (changingEvent.value.from.name !== SCREEN_NAME ||  fbPagePostEvents.indexOf(changingEvent.value.item) >= 0))){
               receivedPostOrComment(changingEvent.value); //supported only in V2, enable it through config.json
           }
         });
