@@ -11,14 +11,34 @@ xCALLY Motion provides all the necessary tools to receive and send messages. All
   * [Git](http://git-scm.com/)
 
 
-## Setting up the app
+## Application Configuration
   * Set the open channel [Account on Motion](https://wiki.xcallymotion.com/display/XMD/Open+Channel)
   * Download the code `git clone https://github.com/xcally/openchannel-facebook.git`
   * Please see `config.json` in the root folder to change the default application settings.
   * Run `npm install` at the root folder to download dependencies.
   * Run `node index.js` to start the application.
 
-## Configuration
+  * Download the code under the `/var/opt/` folder `git clone https://github.com/xcally/openchannel-facebook.git`
+  * Assuming that your code is now located under `/var/opt/openchannel-facebook`, navigate to that folder and run `npm install` to download all dependencies
+  * Open the config and update the application settings:
+
+| Property  | Description |
+| ------------- | ------------- |
+| url  | the api url where your xCally Motion server is located  |
+| ipaddress  | the ip address of the server where the application is running, defaults to `localhost`  |
+| sendMessagePath  | the path configured in the replyURL field in your xCally Motion openchannel account (e.g. replyUrl: http://myserver.com/sendMessage -> sendMessagePath: "/sendMessage")  |
+| port  | the port where the application is running, defaults to `3000`  |
+| appSecret  | the facebook application secret (see Web Configuration)  |
+| messagingToken  | the facebook application token (see Web Configuration)  |
+| validationToken  | the facebook application validation token (see Web Configuration)  |
+| screen_name  | the name of your page, in case you enable facebook posts. Otherwise leave it to default  |
+| enablePosts  | enable facebook posts/comments  |
+| apiVersion  | the facebook API version for facebook API calls  |
+| auth  | username and password of your xCally Motion administrator  |
+
+  * Run `node index.js` (or `pm2 start index.js -n openchannel-facebook` if you have pm2 service installed) to start the application
+
+## Web Configuration
 
 Please follow our [documentation](https://wiki.xcallymotion.com/display/XMD/Develop+your+favorite+customer+service+channel) to configure properly Facebook integration with xCALLY Motion OpenChannel.
 
@@ -35,6 +55,7 @@ Please check if the nodejs application is up!
 * Cannot message users who are not admins, developers or testers of the app until pages_messaging permission is reviewed and the app is live.
 
 The Facebook Application is not approved by Facebook and you are not able to send message using the application: you need to publish the Facebook application.
+
 
 ## Enjoy
 
