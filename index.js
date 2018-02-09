@@ -71,7 +71,7 @@ var SCREEN_NAME = config.screen_name;
 
 var API_VERSION = config.apiVersion || '2.10';
 
-if (!(APP_SECRET && VALIDATION_TOKEN && MESSAGING_TOKEN && MOTION_URL && SEND_MESSAGE_PATH && DOMAIN && USERNAME && PASSWORD && SCREEN_NAME)) {
+if (!(APP_SECRET && VALIDATION_TOKEN && MESSAGING_TOKEN && MOTION_URL && SEND_MESSAGE_PATH && DOMAIN && USERNAME && PASSWORD)) {
   logger.error("Missing config values");
   process.exit(1);
 }
@@ -145,7 +145,7 @@ app.post('/webhook', function(req, res) {
         });
       } else if (pageEntry.changes) {
         pageEntry.changes.forEach(function(changingEvent) {
-          if(config.enablePosts && changingEvent.field === 'feed' && changingEvent.value && changingEvent.value.verb === 'add' && allEvents.indexOf(changingEvent.value.item) >= 0 && (changingEvent.value.from && (changingEvent.value.from.name !== SCREEN_NAME ||  fbPagePostEvents.indexOf(changingEvent.value.item) >= 0))){
+          if((config.enablePosts && SCREEN_NAME) && changingEvent.field === 'feed' && changingEvent.value && changingEvent.value.verb === 'add' && allEvents.indexOf(changingEvent.value.item) >= 0 && (changingEvent.value.from && (changingEvent.value.from.name !== SCREEN_NAME ||  fbPagePostEvents.indexOf(changingEvent.value.item) >= 0))){
               receivedPostOrComment(changingEvent.value); //supported only in V2, enable it through config.json
           }
         });
