@@ -27,7 +27,7 @@ xCALLY Motion provides all the necessary tools to receive and send messages. All
 | url  | the api url where your xCally Motion server is located  |
 | ipaddress  | the ip address of the server where the application is running, defaults to `localhost`  |
 | sendMessagePath  | the path configured in the replyURL field in your xCally Motion openchannel account (e.g. replyUrl: http://myserver.com/sendMessage -> sendMessagePath: "/sendMessage")  |
-| port  | the port where the application is running, defaults to `3000`  |
+| port  | the port where the application is running, defaults to `3001`  |
 | appSecret  | the facebook application secret (see Web Configuration)  |
 | messagingToken  | the facebook application token (see Web Configuration)  |
 | validationToken  | the facebook application validation token (see Web Configuration)  |
