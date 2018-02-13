@@ -12,7 +12,7 @@ xCALLY Motion provides all the necessary tools to receive and send messages. All
 
 
 ## Application Configuration
-  * Set the open channel [Account on Motion](https://wiki.xcallymotion.com/display/XMD/Open+Channel)
+  * Set the open channel [Account on Motion](https://wiki.xcallymotion.com/display/XMV/New+Channels+Configuration+Steps)
   * Download the code `git clone https://github.com/xcally/openchannel-facebook.git`
   * Please see `config.json` in the root folder to change the default application settings.
   * Run `npm install` at the root folder to download dependencies.
@@ -40,7 +40,7 @@ xCALLY Motion provides all the necessary tools to receive and send messages. All
 
 ## Web Configuration
 
-Please follow our [documentation](https://wiki.xcallymotion.com/display/XMD/Develop+your+favorite+customer+service+channel) to configure properly Facebook integration with xCALLY Motion OpenChannel.
+Please follow our [documentation](https://wiki.xcallymotion.com/display/XMV/New+Channels+Configuration+Steps) to configure properly Facebook integration with xCALLY Motion OpenChannel.
 
 ## Troubleshooting
 
