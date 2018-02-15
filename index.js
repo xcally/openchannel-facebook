@@ -42,7 +42,6 @@ try {
 }
 
 app.set('port', config.port || 3001);
-app.set('ipaddress', config.ipaddress || 'localhost');
 
 var fbPostEvents = ['post', 'comment'];
 var fbPagePostEvents = ['share', 'status'];
@@ -145,7 +144,7 @@ app.post('/webhook', function(req, res) {
         });
       } else if (pageEntry.changes) {
         pageEntry.changes.forEach(function(changingEvent) {
-          if((config.enablePosts && SCREEN_NAME) && changingEvent.field === 'feed' && changingEvent.value && changingEvent.value.verb === 'add' && allEvents.indexOf(changingEvent.value.item) >= 0 && (changingEvent.value.from && (changingEvent.value.from.name !== SCREEN_NAME ||  fbPagePostEvents.indexOf(changingEvent.value.item) >= 0))){
+            if((config.enablePosts && SCREEN_NAME !== undefined) && changingEvent.field === 'feed' && changingEvent.value && changingEvent.value.verb === 'add' && allEvents.indexOf(changingEvent.value.item) >= 0 && ((changingEvent.value.from && changingEvent.value.from.name !== SCREEN_NAME) ||  fbPagePostEvents.indexOf(changingEvent.value.item) >= 0)){
               receivedPostOrComment(changingEvent.value); //supported only in V2, enable it through config.json
           }
         });
@@ -336,7 +335,7 @@ function receivedMessage(event) {
   var timeOfMessage = event.timestamp;
   var message = event.message;
 
-  logger.info(util.format("Received message for user %d and page %d with message: %d", senderID, recipientID, message));
+  logger.info(util.format("Received message for user %d and page %d with message: %s", senderID, recipientID, message));
 
   var messageContent = message.text || '';
 
@@ -483,6 +482,6 @@ app.post(SEND_MESSAGE_PATH, function(req, res) {
 });
 
 // Start server
-app.listen(app.get('port'), app.get('ipaddress'), function() {
+app.listen(app.get('port'), function() {
   logger.info(util.format('openchannel-facebook app is running on port %d on %s', app.get('port'), app.get('ipaddress')));
 });
