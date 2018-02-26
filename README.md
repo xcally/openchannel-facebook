@@ -33,7 +33,6 @@ xCALLY Motion provides all the necessary tools to receive and send messages. All
 | validationToken  | the facebook application validation token (see Web Configuration)  |
 | screen_name  | the name of your page, in case you enable facebook posts. Otherwise leave it to default  |
 | enablePosts  | enable facebook posts/comments  |
-| apiVersion  | the facebook API version for facebook API calls  |
 | auth  | username and password of your xCally Motion administrator  |
 
   * Run `node index.js` (or `pm2 start index.js -n openchannel-facebook` if you have pm2 service installed) to start the application
