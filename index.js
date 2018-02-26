@@ -68,7 +68,7 @@ var PASSWORD = config.auth.password;
 
 var SCREEN_NAME = config.screen_name;
 
-var API_VERSION = config.apiVersion || '2.10';
+var API_VERSION = '2.9';//DO NOT CHANGE, NEW API VERSIONS ARE NOT SUPPORTED!!
 
 if (!(APP_SECRET && VALIDATION_TOKEN && MESSAGING_TOKEN && MOTION_URL && SEND_MESSAGE_PATH && DOMAIN && USERNAME && PASSWORD)) {
   logger.error("Missing config values");
@@ -335,7 +335,7 @@ function receivedMessage(event) {
   var timeOfMessage = event.timestamp;
   var message = event.message;
 
-  logger.info(util.format("Received message for user %d and page %d with message: %s", senderID, recipientID, message));
+  logger.info(util.format("Received message for user %s and page %s with message: %s", senderID, recipientID, message));
 
   var messageContent = message.text || '';
 
@@ -483,5 +483,5 @@ app.post(SEND_MESSAGE_PATH, function(req, res) {
 
 // Start server
 app.listen(app.get('port'), function() {
-  logger.info(util.format('openchannel-facebook app is running on port %d on %s', app.get('port'), app.get('ipaddress')));
+  logger.info(util.format('openchannel-facebook app is running on port %s', app.get('port')));
 });
