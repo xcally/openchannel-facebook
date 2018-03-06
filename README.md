@@ -29,7 +29,7 @@ xCALLY Motion provides all the necessary tools to receive and send messages. All
 | sendMessagePath  | the path configured in the replyURL field in your xCally Motion openchannel account (e.g. replyUrl: http://myserver.com/sendMessage -> sendMessagePath: "/sendMessage")  |
 | port  | the port where the application is running, defaults to `3001`  |
 | appSecret  | the facebook application secret (see Web Configuration)  |
-| messagingToken  | the facebook application token (see Web Configuration)  |
+| pageAccessToken  | the facebook application token (see Web Configuration)  |
 | validationToken  | the facebook application validation token (see Web Configuration)  |
 | screen_name  | the name of your page, in case you enable facebook posts. Otherwise leave it to default  |
 | enablePosts  | enable facebook posts/comments  |
@@ -51,7 +51,7 @@ Please check to have configured correctly the ["Send" web hook](https://wiki.xca
 
 Please check if the nodejs application is up!
 
-* Cannot message users who are not admins, developers or testers of the app until pages_messaging permission is reviewed and the app is live.
+* Cannot message users who are not admins, developers or testers of the app until pages_permission is reviewed and the app is live.
 
 The Facebook Application is not approved by Facebook and you are not able to send message using the application: you need to publish the Facebook application.
 
