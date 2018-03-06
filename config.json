@@ -3,7 +3,7 @@
   "sendMessagePath": "/YOUR_PATH",
   "port": 3001,
   "appSecret": "YOUR_APP_SECRET",
-  "messagingToken": "YOUR_MESSAGING_TOKEN",
+  "pageAccessToken": "YOUR_PAGE_ACCESS_TOKEN",
   "validationToken": "YOUR_VALIDATION_TOKEN",
   "screen_name": "FACEBOOK_ADMIN_NAME",
   "enablePosts": false,
