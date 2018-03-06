@@ -53,7 +53,7 @@ var APP_SECRET = config.appSecret;
 // Arbitrary value used to validate a webhook
 var VALIDATION_TOKEN = config.validationToken;
 // Generate a page access token for your page from the App Dashboard
-var MESSAGING_TOKEN = config.messagingToken;
+var PAGE_ACCESS_TOKEN = config.pageAccessToken;
 // URL can be retrieve from the Motion OpenChannel Account
 var MOTION_URL = config.url;
 // Path chosen to send messages from Motion OpenChannel Inbox to Facebook
@@ -68,9 +68,9 @@ var PASSWORD = config.auth.password;
 
 var SCREEN_NAME = config.screen_name;
 
-var API_VERSION = '2.9';//DO NOT CHANGE, NEW API VERSIONS ARE NOT SUPPORTED!!
+var API_VERSION = '2.12';//DO NOT CHANGE, NEW API VERSIONS ARE NOT SUPPORTED!!
 
-if (!(APP_SECRET && VALIDATION_TOKEN && MESSAGING_TOKEN && MOTION_URL && SEND_MESSAGE_PATH && DOMAIN && USERNAME && PASSWORD)) {
+if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && MOTION_URL && SEND_MESSAGE_PATH && DOMAIN && USERNAME && PASSWORD)) {
   logger.error("Missing config values");
   process.exit(1);
 }
@@ -132,7 +132,6 @@ app.post('/webhook', function(req, res) {
     data.entry.forEach(function(pageEntry) {
       var pageID = pageEntry.id;
       var timeOfEvent = pageEntry.time;
-
       // Iterate over each messaging event
       if (pageEntry.messaging) {
         pageEntry.messaging.forEach(function(messagingEvent) {
@@ -228,7 +227,7 @@ function sendMessageToMotion(senderID, messageContent, recipientID, attachmentId
           uri: util.format('https://graph.facebook.com/v%s/%s', API_VERSION, senderID),
           qs: {
             fields: 'first_name,last_name,profile_pic,locale,timezone,gender',
-            access_token: MESSAGING_TOKEN
+            access_token: PAGE_ACCESS_TOKEN
           },
           json: true
         };
@@ -373,37 +372,19 @@ app.post(SEND_MESSAGE_PATH, function(req, res) {
           });
       }
 
-      var options = {
-        method: 'GET',
-        uri: util.format('https://graph.facebook.com/v%s/me', API_VERSION),
+     var params = {
+        uri: util.format('https://graph.facebook.com/v%s/%s/comments', API_VERSION, req.body.Interaction.threadId),
         qs: {
-          access_token: MESSAGING_TOKEN,
-          fields: 'access_token'
+          access_token: PAGE_ACCESS_TOKEN,
+          message: req.body.body
         },
+        method: 'POST',
         json: true
       };
-
-      return request(options)
-      .then(function(page){
-
-             if(!page){
-              throw new Error('Facebook page not found!');
-             }
-
-             var params = {
-                uri: util.format('https://graph.facebook.com/v%s/%s/comments', API_VERSION, req.body.Interaction.threadId),
-                qs: {
-                  access_token: page.access_token,
-                  message: req.body.body
-                },
-                method: 'POST',
-                json: true
-              };
-              return sendRequestToFacebook(params, res, util.format('post with id %s', req.body.Interaction.threadId));
-     })
-     .catch(function(err) {
-       logger.error('Error on page token request/ facebook post:', err);
-     });
+      return sendRequestToFacebook(params, res, util.format('post with id %s', req.body.Interaction.threadId))
+      .catch(function(err) {
+        logger.error('Error on page token request/ facebook post:', err);
+      });
   }
   else{
     var to = req.body.Contact ? req.body.Contact.facebook : req.body.to;
@@ -411,7 +392,7 @@ app.post(SEND_MESSAGE_PATH, function(req, res) {
     var msg = {
         uri: util.format('https://graph.facebook.com/v%s/me/messages', API_VERSION),
         qs: {
-          access_token: MESSAGING_TOKEN
+          access_token: PAGE_ACCESS_TOKEN
         },
         method: 'POST',
         json: true
